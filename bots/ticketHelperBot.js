@@ -1,5 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
+const axios = require("axios");
+const url = "http://httpbin.org/post";
 
 const { ActivityHandler } = require('botbuilder');
 
@@ -26,6 +28,7 @@ class TicketHelperBot extends ActivityHandler {
             if(!userProfile.name)
             {
                 userProfile.name = turnContext.activity.from.name;
+                userProfile.post = await getData(url);
             }
             if (!userProfile.mail) {
                 // First time around this is undefined, so we will prompt user for name.
@@ -45,6 +48,8 @@ class TicketHelperBot extends ActivityHandler {
                 // Display state data.
                 await turnContext.sendActivity(`${ userProfile.name } sent: ${ turnContext.activity.text }`);
                 await turnContext.sendActivity(`Correo: ${ userProfile.mail }`);
+                await turnContext.sendActivity(`post ${ userProfile.post.test }`);
+
                 await turnContext.sendActivity(`Message received at: ${ conversationData.timestamp }`);
                 await turnContext.sendActivity(`Message received from: ${ conversationData.channelId }`);
             }
@@ -76,5 +81,17 @@ class TicketHelperBot extends ActivityHandler {
 
     }
 }
+
+const getData = async () => {
+    try {
+      const response = await axios.post(url, { test : 'contentTest'});
+      const data = response.data;
+      console.log(data);
+      const content = JSON.parse(data.data);
+      return content;
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
 module.exports.TicketHelperBot = TicketHelperBot;
