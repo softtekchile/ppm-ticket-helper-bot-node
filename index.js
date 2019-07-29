@@ -10,6 +10,7 @@ const { BotFrameworkAdapter, MemoryStorage, ConversationState, UserState } = req
 
 // This bot's main dialog.
 const { TicketHelperBot } = require('./bots/ticketHelperBot');
+const { CreateTicketDialog } = require('./dialogs/createTicketDialog');
 
 // Read environment variables from .env file
 const ENV_FILE = path.join(__dirname, '.env');
@@ -37,7 +38,8 @@ const conversationState = new ConversationState(memoryStorage);
 const userState = new UserState(memoryStorage);
 
 // Create the main dialog.
-const bot = new TicketHelperBot(conversationState, userState);
+const dialog = new CreateTicketDialog(userState);
+const bot = new TicketHelperBot(conversationState, userState, dialog);
 
 // Catch-all for errors.
 adapter.onTurnError = async (context, error) => {

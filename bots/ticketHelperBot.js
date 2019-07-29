@@ -10,7 +10,7 @@ const CONVERSATION_DATA_PROPERTY = 'conversationData';
 const USER_PROFILE_PROPERTY = 'userProfile';
 
 class TicketHelperBot extends ActivityHandler {
-    constructor(conversationState, userState) {
+    constructor(conversationState, userState, dialog) {
         super();
         // Create the state property accessors for the conversation data and user profile.
         this.conversationData = conversationState.createProperty(CONVERSATION_DATA_PROPERTY);
@@ -19,29 +19,48 @@ class TicketHelperBot extends ActivityHandler {
         this.conversationState = conversationState;
         this.userState = userState;
 
+        this.dialog = dialog;
+        this.dialogState = this.conversationState.createProperty('DialogState');
+
         this.onMessage(async (turnContext, next) => {
             // Get the state properties from the turn context.
             const userProfile = await this.userProfile.get(turnContext, {});
             const conversationData = await this.conversationData.get(
-                turnContext, { promptedForMail: false });
+                turnContext, { promptedForMail: false, promptedForCreateTicket: false});
 
             if(!userProfile.name)
             {
                 userProfile.name = turnContext.activity.from.name;
                 userProfile.post = await getData(url);
             }
-            if (!userProfile.mail) {
+            if (!conversationData.promptedForMail) {
                 // First time around this is undefined, so we will prompt user for name.
                 await turnContext.sendActivity(`Gracias ${ userProfile.name }.`);
                 userProfile.mail = turnContext.activity.text;
+                conversationData.promptedForMail = true;
             } 
-            else if(turnContext.activity.text == "!mail")
+            if (turnContext.activity.text == "!mail")
             {
                 await turnContext.sendActivity(`Correo: ${ userProfile.mail }`);
-            } 
-            else 
+            }
+            if (turnContext.activity.text == "!create")
             {
-                // Add message details to the conversation data.
+                conversationData.promptedForCreateTicket = true;
+            }
+            if (conversationData.promptedForCreateTicket) {
+                await this.dialog.run(turnContext, this.dialogState);
+
+            } 
+
+
+            
+            /*
+            else  
+            {
+                await this.dialog.run(turnContext, this.dialogState);
+
+               ECHOOOOO
+                Add message details to the conversation data.
                 conversationData.timestamp = turnContext.activity.timestamp.toLocaleString();
                 conversationData.channelId = turnContext.activity.channelId;
 
@@ -52,8 +71,9 @@ class TicketHelperBot extends ActivityHandler {
 
                 await turnContext.sendActivity(`Message received at: ${ conversationData.timestamp }`);
                 await turnContext.sendActivity(`Message received from: ${ conversationData.channelId }`);
+                
             }
-
+            */
             // By calling next() you ensure that the next BotHandler is run.
             await next();
         });
@@ -74,11 +94,9 @@ class TicketHelperBot extends ActivityHandler {
             // Save any state changes. The load happened during the execution of the Dialog.
             await this.conversationState.saveChanges(turnContext, false);
             await this.userState.saveChanges(turnContext, false);
-
             // By calling next() you ensure that the next BotHandler is run.
             await next();
         });
-
     }
 }
 
