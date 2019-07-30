@@ -1,13 +1,17 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-const axios = require("axios");
-const url = "http://httpbin.org/post";
 
 const { ActivityHandler } = require('botbuilder');
 
 // The accessor names for the conversation data and user profile state property accessors.
 const CONVERSATION_DATA_PROPERTY = 'conversationData';
 const USER_PROFILE_PROPERTY = 'userProfile';
+
+const phase = {
+    standBy: 'standBy',
+    mail: 'mail',
+    createTicket: 'createTicket'
+    };
 
 class TicketHelperBot extends ActivityHandler {
     constructor(conversationState, userState, dialog) {
@@ -25,56 +29,14 @@ class TicketHelperBot extends ActivityHandler {
         this.onMessage(async (turnContext, next) => {
             // Get the state properties from the turn context.
             const userProfile = await this.userProfile.get(turnContext, {});
-            const conversationData = await this.conversationData.get(
-                turnContext, { promptedForMail: false, promptedForCreateTicket: false});
+            const conversationData = await this.conversationData.get( turnContext, { conversationPhase: phase.mail  });
 
-            if(!userProfile.name)
-            {
-                userProfile.name = turnContext.activity.from.name;
-                userProfile.post = await getData(url);
-            }
-            if (!conversationData.promptedForMail) {
-                // First time around this is undefined, so we will prompt user for name.
-                await turnContext.sendActivity(`Gracias ${ userProfile.name }.`);
-                userProfile.mail = turnContext.activity.text;
-                conversationData.promptedForMail = true;
-            } 
-            if (turnContext.activity.text == "!mail")
-            {
-                await turnContext.sendActivity(`Correo: ${ userProfile.mail }`);
-            }
-            if (turnContext.activity.text == "!create")
-            {
-                conversationData.promptedForCreateTicket = true;
-            }
-            if (conversationData.promptedForCreateTicket) {
+            await TicketHelperBot.conversationManager(conversationData, userProfile, turnContext);
+
+            if (conversationData.conversationPhase == phase.createTicket){
                 await this.dialog.run(turnContext, this.dialogState);
-
-            } 
-
-
-            
-            /*
-            else  
-            {
-                await this.dialog.run(turnContext, this.dialogState);
-
-               ECHOOOOO
-                Add message details to the conversation data.
-                conversationData.timestamp = turnContext.activity.timestamp.toLocaleString();
-                conversationData.channelId = turnContext.activity.channelId;
-
-                // Display state data.
-                await turnContext.sendActivity(`${ userProfile.name } sent: ${ turnContext.activity.text }`);
-                await turnContext.sendActivity(`Correo: ${ userProfile.mail }`);
-                await turnContext.sendActivity(`post ${ userProfile.post.test }`);
-
-                await turnContext.sendActivity(`Message received at: ${ conversationData.timestamp }`);
-                await turnContext.sendActivity(`Message received from: ${ conversationData.channelId }`);
-                
             }
-            */
-            // By calling next() you ensure that the next BotHandler is run.
+
             await next();
         });
 
@@ -98,18 +60,30 @@ class TicketHelperBot extends ActivityHandler {
             await next();
         });
     }
-}
 
-const getData = async () => {
-    try {
-      const response = await axios.post(url, { test : 'contentTest'});
-      const data = response.data;
-      console.log(data);
-      const content = JSON.parse(data.data);
-      return content;
-    } catch (error) {
-      console.log(error);
+    static async conversationManager(conversationData, userProfile, turnContext, d) {
+
+        switch (conversationData.conversationPhase) {
+            case phase.standBy:
+                if (turnContext.activity.text == "!mail")
+                {
+                    await turnContext.sendActivity(`Correo: ${ userProfile.mail }`);
+                }
+                if (turnContext.activity.text == "!create")
+                {
+                    conversationData.conversationPhase = phase.createTicket;
+                }
+                break;
+            
+            case phase.mail:
+                userProfile.name = turnContext.activity.from.name;
+                await turnContext.sendActivity(`Gracias ${ userProfile.name }.`);
+                userProfile.mail = turnContext.activity.text;
+                conversationData.conversationPhase = phase.standBy;
+                break;
+        }
+
     }
-  };
+}
 
 module.exports.TicketHelperBot = TicketHelperBot;

@@ -9,23 +9,22 @@ const {
     TextPrompt,
     WaterfallDialog
 } = require('botbuilder-dialogs');
+
+const { CancelAndHelpDialog } = require('./cancelAndHelpDialog');
+
+
+const axios = require("axios");
+const url = "http://httpbin.org/post";
 const { PpmSettings } = require('../ppmSettings');
 
 const CHOICE_PROMPT = 'CHOICE_PROMPT';
 const CONFIRM_PROMPT = 'CONFIRM_PROMPT';
-
 const TEXT_PROMPT = 'TEXT_PROMPT';
-
-const ASSIGNED_TO = 'ASSIGNED_TO';
-const REASON = 'REASON';
-const CLIENT_ID = 'CLIENT_ID';
-const CATEGORY_APPLICATION = 'CATEGORY_APPLICATION';
-const DETAILED_DESCRIPTION = 'DETAILED_DESCRIPTION';
 
 const PPM_SETTINGS = 'PPM_SETTINGS';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 
-class CreateTicketDialog extends ComponentDialog {
+class CreateTicketDialog extends CancelAndHelpDialog {
     constructor(userState) {
         super('createTicketDialog');
 
@@ -33,6 +32,7 @@ class CreateTicketDialog extends ComponentDialog {
 
         this.addDialog(new TextPrompt(TEXT_PROMPT));
         this.addDialog(new ChoicePrompt(CHOICE_PROMPT));
+        this.addDialog(new ConfirmPrompt(CONFIRM_PROMPT));
 
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.assignStep.bind(this),
@@ -41,7 +41,8 @@ class CreateTicketDialog extends ComponentDialog {
             this.urgencyStep.bind(this),
             this.priorityStep.bind(this),
             this.descriptionStep.bind(this),
-            this.summaryStep.bind(this)
+            this.confirmStep.bind(this),
+            this.resultStep.bind(this)
             
         ]));
 
@@ -107,35 +108,62 @@ class CreateTicketDialog extends ComponentDialog {
 
         return await step.prompt(TEXT_PROMPT, `Ingrese descripcion del ticket. Ej: GTD-XXX - QS-SN-XXX - [Descripción representativa de la solicitud] `);
     }
-    async summaryStep(step) {
-            step.values.description = step.result;
 
-            // Get the current profile object from user state.
-            const ppmSettings = await this.ppmSettings.get(step.context, new PpmSettings());
+    async confirmStep(step) {
+        step.values.description = step.result;
 
-            ppmSettings.assignedTo = step.values.assignedTo;
-            ppmSettings.reason = step.values.reason;
-            ppmSettings.impact = step.values.impact;
-            ppmSettings.urgency = step.values.urgency;
-            ppmSettings.priority = step.values.priority;
-            ppmSettings.description = step.values.description;
-            
-            let msg = `El siguiente Ticket será creado:\n
-            Org Unit: ${ ppmSettings.orgUnit }\n
-            Assigned To: ${ ppmSettings.assignedTo }\n
-            Reason: ${ ppmSettings.reason } \n
-            Impact: ${ ppmSettings.impact } \n
-            Urgency: ${ ppmSettings.urgency } \n
-            Priority: ${ ppmSettings.priority } \n
-            Description: ${ ppmSettings.description } \n`;
+        // Get the current profile object from user state.
+        const ppmSettings = await this.ppmSettings.get(step.context, new PpmSettings());
 
-            await step.context.sendActivity(msg);
+        ppmSettings.assignedTo = step.values.assignedTo;
+        ppmSettings.reason = step.values.reason;
+        ppmSettings.impact = step.values.impact;
+        ppmSettings.urgency = step.values.urgency;
+        ppmSettings.priority = step.values.priority;
+        ppmSettings.description = step.values.description;
+        
+        let msg = `El siguiente Ticket será creado:\n
+        Org Unit: ${ ppmSettings.orgUnit }\n
+        Assigned To: ${ ppmSettings.assignedTo }\n
+        Reason: ${ ppmSettings.reason } \n
+        Impact: ${ ppmSettings.impact } \n
+        Urgency: ${ ppmSettings.urgency } \n
+        Priority: ${ ppmSettings.priority } \n
+        Description: ${ ppmSettings.description } \n`;
+        await step.context.sendActivity(msg);
 
+        step.values.ppm = ppmSettings;
 
-        // WaterfallStep always finishes with the end of the Waterfall or with another dialog, here it is the end.
+        return await step.prompt(CONFIRM_PROMPT, { prompt: 'Es esto correcto?' });
+    }
+
+    async resultStep(step) {
+
+        if (step.result) {
+            const data = await getData(step.values.ppm);
+            await step.context.sendActivity(`La id del ticket creado es: ${ data.id_ppm }`);
+        }
+        else
+        {
+            await step.context.sendActivity(`La creación del ticket a sido cancelada.`);
+
+        }
+
         return await step.endDialog();
     }
 }
+
+const getData = async (ppmSettings) =>  {
+    try {
+      const response = await axios.post(url, { ppm : ppmSettings, id_ppm : '1234567'});
+      const data = response.data;
+      console.log(data);
+      const content = JSON.parse(data.data);
+      return content;
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
 module.exports.CreateTicketDialog = CreateTicketDialog;
 
