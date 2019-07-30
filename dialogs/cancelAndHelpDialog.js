@@ -2,6 +2,15 @@ const { ComponentDialog } = require('botbuilder-dialogs');
 
 class CancelAndHelpDialog extends ComponentDialog {
 
+    async onBeginDialog(innerDc, options) {
+        const result = await this.interrupt(innerDc);
+        if (result) {
+            return result;
+        }
+
+        return await super.onBeginDialog(innerDc, options);
+    }
+    
     async onContinueDialog(innerDc) {
         const result = await this.interrupt(innerDc);
         if (result) {
@@ -9,6 +18,8 @@ class CancelAndHelpDialog extends ComponentDialog {
         }
         return await super.onContinueDialog(innerDc);
     }
+
+    
 
     async interrupt(innerDc) {
         if (innerDc.context.activity.text) {

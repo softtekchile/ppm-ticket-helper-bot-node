@@ -124,12 +124,14 @@ class CreateTicketDialog extends CancelAndHelpDialog {
         
         let msg = `El siguiente Ticket será creado:\n
         Org Unit: ${ ppmSettings.orgUnit }\n
+        WBS: ${ ppmSettings.wbs }\n
         Assigned To: ${ ppmSettings.assignedTo }\n
         Reason: ${ ppmSettings.reason } \n
         Impact: ${ ppmSettings.impact } \n
         Urgency: ${ ppmSettings.urgency } \n
         Priority: ${ ppmSettings.priority } \n
-        Description: ${ ppmSettings.description } \n`;
+        Description: ${ ppmSettings.description } \n
+        Location: ${ ppmSettings.location } \n`;
         await step.context.sendActivity(msg);
 
         step.values.ppm = ppmSettings;
