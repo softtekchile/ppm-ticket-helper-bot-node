@@ -16,6 +16,9 @@ const phase = {
 class TicketHelperBot extends ActivityHandler {
     constructor(conversationState, userState, dialog) {
         super();
+        if (!conversationState) throw new Error('[DialogBot]: Missing parameter. conversationState is required');
+        if (!userState) throw new Error('[DialogBot]: Missing parameter. userState is required');
+        if (!dialog) throw new Error('[DialogBot]: Missing parameter. dialog is required');
         // Create the state property accessors for the conversation data and user profile.
         this.conversationData = conversationState.createProperty(CONVERSATION_DATA_PROPERTY);
         this.userProfile = userState.createProperty(USER_PROFILE_PROPERTY);
@@ -32,7 +35,6 @@ class TicketHelperBot extends ActivityHandler {
             const conversationData = await this.conversationData.get( turnContext, { conversationPhase: phase.mail  });
 
             await TicketHelperBot.conversationManager(conversationData, userProfile, turnContext);
-
             if (conversationData.conversationPhase == phase.createTicket){
                 await this.dialog.run(turnContext, this.dialogState);
             }
@@ -45,6 +47,7 @@ class TicketHelperBot extends ActivityHandler {
             for (let cnt = 0; cnt < membersAdded.length; ++cnt) {
                 if (membersAdded[cnt].id !== context.activity.recipient.id) {
                     await context.sendActivity('Bienvenido a Bot Crear Ticket Service '+ context.activity.from.name);
+
                     await context.sendActivity('Por favor ingrese su correo');
                 }
             }
@@ -53,9 +56,16 @@ class TicketHelperBot extends ActivityHandler {
         });
 
         this.onDialog(async (turnContext, next) => {
+            const conversationData = await this.conversationData.get( turnContext, { conversationPhase: phase.mail  });
+            switch(turnContext.activity.text){
+                case 'cancel': 
+                    conversationData.conversationPhase = phase.standBy;
+            };
             // Save any state changes. The load happened during the execution of the Dialog.
+
             await this.conversationState.saveChanges(turnContext, false);
             await this.userState.saveChanges(turnContext, false);
+            
             // By calling next() you ensure that the next BotHandler is run.
             await next();
         });
