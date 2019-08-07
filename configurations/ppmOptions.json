@@ -1,0 +1,61 @@
+{
+    "orgUnit":"1-0000013297-1",
+    "wbs": "1-0000013297-1",
+    "requirementType": {
+        "service":"Service",
+        "maintenance": "Maintenance"
+    },
+    "reason":{
+        "newAccountAccess": "New Account Access",
+        "accountActivation": "Account Activation",
+        "accountModification":"Account Modification",
+        "passwordReset": "Password Reset",
+        "requestInformation":"Request Information",
+        "aplicationQuestionTraining":"Aplication Question/Training",
+        "documentation": "Documentation",
+        "newAssetRequest": "New Asset Request",
+        "softwareInstallation": "Software Installation",
+        "complianceAuditRelated": "Compliance (Audit-Related",
+        "estimationCollaboration": "Estimation/Collaboration",
+        "analysisCollaboration": "Analysis/Collaboration",
+        "designCollaboration": "Design/Collaboration",
+        "testingCollaboration": "Testing/Collaboration",
+        "disasterRecoveryCollaboration": "Disaster Recovery/Collaboration",
+        "dataLoad": "Data Load"
+    },
+    "impact":{
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+    },
+    "urgency":{
+        "low": "Low",
+        "medium": "Medium",
+        "jigh": "High"
+    },
+    "categoryApplication":{
+        "administradorDeEquipos": "Administrador de Equipos",
+        "agendamiento": "Agendamiento",
+        "alianzas": "Alianzas",
+        "atencionClientes": "Atención Clientes",
+        "carterizador": "Carterizador",
+        "centralTelefonica": "Central Telefónica",
+        "contactos": "Contactos",
+        "corteYReposicion": "Corte y Reposición",
+        "gestionComercial": "Gestión Comercial",
+        "gestorDeOportunidadesComerciales": "Gestor de oportunidades Comerciales",
+        "instalaciones": "Instalaciones",
+        "integracionSicretArbor": "Integración Sicret Arbor",
+        "integracionSicretETA": "Integración Sicret ETA",
+        "integracionSicretJSD": "Integración Sicret JSD",
+        "integracionSicretSmallworld": "Integración Sicret Smallworld",
+        "portabilidad":"Portabilidad",
+        "television":"Television",
+        "webServiceSucursalVirtual": "WebService Sucursal Virtual",
+        "webServiceXygo": "WebService Xygo"
+    },
+    "location": {
+        "argentina": "Argentina",
+        "chile": "Chile"
+    }
+}

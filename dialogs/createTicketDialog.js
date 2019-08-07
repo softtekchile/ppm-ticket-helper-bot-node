@@ -1,3 +1,5 @@
+'use strict';
+
 const {
     ChoiceFactory,
     ChoicePrompt,
@@ -11,7 +13,7 @@ const {
 } = require('botbuilder-dialogs');
 
 const { CancelAndHelpDialog } = require('./cancelAndHelpDialog');
-
+const fs = require('fs');
 
 const axios = require("axios");
 const url = "http://httpbin.org/post";
