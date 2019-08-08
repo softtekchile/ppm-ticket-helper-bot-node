@@ -1,0 +1,34 @@
+{
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    "type": "AdaptiveCard",
+    "version": "1.0",
+    "body": [
+        {
+            "type": "TextBlock",
+            "text": "Ingrese su usuario de PPM"
+        },
+        {
+            "type": "Input.Text",
+            "title": "New Input.Toggle",
+            "placeholder": "Correo",
+            "id": "mail",
+            "style": "Email"
+        },
+        {
+            "type": "TextBlock",
+            "text": "Ingrese su contraseña de PPM"
+        },
+        {
+            "type": "Input.Text",
+            "title": "New Input.Toggle",
+            "placeholder": "Contraseña",
+            "id": "pw"
+        }
+    ],
+    "actions": [
+        {
+            "type": "Action.Submit",
+            "title": "Guardar"
+        }
+    ]
+}

@@ -1,11 +1,12 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-const { ActivityHandler } = require('botbuilder');
+const { ActivityHandler, CardFactory } = require('botbuilder');
 
 // The accessor names for the conversation data and user profile state property accessors.
 const CONVERSATION_DATA_PROPERTY = 'conversationData';
 const USER_PROFILE_PROPERTY = 'userProfile';
+const PpmUserCard = require('../adaptiveCards/ppmUserCard.json');
 
 const phase = {
     standBy: 'standBy',
@@ -48,7 +49,8 @@ class TicketHelperBot extends ActivityHandler {
                 if (membersAdded[cnt].id !== context.activity.recipient.id) {
                     await context.sendActivity('Bienvenido a Bot Crear Ticket Service '+ context.activity.from.name);
 
-                    await context.sendActivity('Por favor ingrese su correo');
+                    await context.sendActivity({ attachments: [this.createAdaptiveCard()] });
+
                 }
             }
             // By calling next() you ensure that the next BotHandler is run.
@@ -71,6 +73,10 @@ class TicketHelperBot extends ActivityHandler {
         });
     }
 
+    createAdaptiveCard() {
+        return CardFactory.adaptiveCard(PpmUserCard);
+    }
+
     static async conversationManager(conversationData, userProfile, turnContext) {
 
         switch (conversationData.conversationPhase) {
@@ -78,6 +84,8 @@ class TicketHelperBot extends ActivityHandler {
                 if (turnContext.activity.text == "!mail")
                 {
                     await turnContext.sendActivity(`Correo: ${ userProfile.mail }`);
+                    await turnContext.sendActivity(`pw: ${ userProfile.pw }`);
+
                 }
                 if (turnContext.activity.text == "!create")
                 {
@@ -88,7 +96,9 @@ class TicketHelperBot extends ActivityHandler {
             case phase.mail:
                 userProfile.name = turnContext.activity.from.name;
                 await turnContext.sendActivity(`Gracias ${ userProfile.name }.`);
-                userProfile.mail = turnContext.activity.text;
+                userProfile.mail = turnContext.activity.value.mail;
+                userProfile.pw = turnContext.activity.value.pw;
+
                 conversationData.conversationPhase = phase.standBy;
                 break;
         }
