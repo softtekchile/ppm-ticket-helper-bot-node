@@ -13,16 +13,21 @@ const {
 } = require('botbuilder-dialogs');
 
 
+
 const { CancelAndHelpDialog } = require('./cancelAndHelpDialog');
 
+
+//http request con axios
 const axios = require("axios");
 const url = "http://httpbin.org/post";
 const { PpmSettings } = require('../ppmSettings');
 
-
+//preconfiguraciones 
 let serviceTicket = require('../configurations/serviceTicket.json');
 let genericTicket = require('../configurations/genericTicket.json');
+let maintenanceTicket = require('../configurations/maintenanceTicket.json');
 let ppmOptions = require('../configurations/ppmOptions.json');
+
 
 const CHOICE_PROMPT = 'CHOICE_PROMPT';
 const CONFIRM_PROMPT = 'CONFIRM_PROMPT';
@@ -30,6 +35,14 @@ const TEXT_PROMPT = 'TEXT_PROMPT';
 
 const PPM_SETTINGS = 'PPM_SETTINGS';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
+
+//tipos de selecciones multiples
+const REQUIREMENT_TYPE_CHOICE = 'requirementType';
+const SERVICE_REASON_CHOICE = 'serviceReason';
+const MAINTENANCE_REASON_CHOICE = 'maintenanceReason';
+const IMPACT_CHOICE = 'impact';
+const URGENCY_CHOICE = 'urgency';
+const CATEGORY_APPLICATION_CHOICE = 'CategoryApplication';
 
 class CreateTicketDialog extends CancelAndHelpDialog {
     constructor(userState) {
@@ -46,8 +59,11 @@ class CreateTicketDialog extends CancelAndHelpDialog {
             this.reasonStep.bind(this),
             this.impactStep.bind(this),
             this.urgencyStep.bind(this),
-            this.priorityStep.bind(this),
             this.descriptionStep.bind(this),
+            //this.categoryApplicationStep.bind(this),
+            //this.clientIdStep.bind(this),
+            //this.requestorNameStep.bind(this),
+            //this.detailedDescriptionStep.bind(this),
             this.confirmStep.bind(this),
             this.resultStep.bind(this)
             
@@ -68,19 +84,21 @@ class CreateTicketDialog extends CancelAndHelpDialog {
 
     async setupStep(step) {
 
-        return await step.prompt(CHOICE_PROMPT, {
-            prompt: 'Selecciona tipo de ticket: ',
-            choices: ChoiceFactory.toChoices(['Service', 'Generic'])
-        });
+        const options = this.optionBuilder(REQUIREMENT_TYPE_CHOICE);
+        return await step.prompt(CHOICE_PROMPT, options);
     }
+
     async assignStep(step) {
         var ppmSettingsPre;
         switch (step.result.value){
             case 'Service':
-                var ppmSettingsPre = serviceTicket;
+                ppmSettingsPre = serviceTicket;
+                break;
+            case 'Maintenance':
+                ppmSettingsPre = maintenanceTicket;
                 break;
             case 'Generic':
-                var ppmSettingsPre = genericTicket;
+                ppmSettingsPre = genericTicket;
                 break; 
         };
         step.values.ppmSettings = ppmSettingsPre;
@@ -91,62 +109,52 @@ class CreateTicketDialog extends CancelAndHelpDialog {
         step.values.ppmSettings.assignedTo = step.result;
         await step.context.sendActivity(`El ticket será asignado a: ${ step.values.ppmSettings.assignedTo }`);
 
-
-        return await step.prompt(CHOICE_PROMPT, {
-            prompt: 'Selecciona la razon: ',
-            choices: ChoiceFactory.toChoices(['Documentation', 'New Asset Request', 'Software Installation', 'Estimation/Collaboration', 'Analysis/Collaboration', 
-            'Design/Collaboration', 'Testing/Collaboration', 'Disaster Recovery/Collaboration', 'Data Load'])
-        });
+        const options = this.optionBuilder(SERVICE_REASON_CHOICE);
+        return await step.prompt(CHOICE_PROMPT, options);
     }
 
     async impactStep(step) {
 
         await step.context.sendActivity(`Razón escogida ${ step.result.value }`);
         step.values.ppmSettings.reason = step.result.value;
-        if(!step.values.ppmSettings.impact)
+
+        if(step.values.ppmSettings.impact)
         {
-            return await step.prompt(CHOICE_PROMPT, {
-                prompt: 'Selecciona el impacto: ',
-                choices: ChoiceFactory.toChoices(['Low', 'Medium', 'High'])
-            });
+            return await step.next();
         }
-        return await step.next();
+        
+        const options = this.optionBuilder(IMPACT_CHOICE);
+        return await step.prompt(CHOICE_PROMPT, options);
     }
 
     async urgencyStep(step) {
-        if(typeof step.result != 'undefined'){
+        if(typeof step.result != 'undefined')
+        {
             step.values.ppmSettings.impact = step.result.value;
         }
+
         await step.context.sendActivity(`Nivel de impacto escogido: ${ step.values.ppmSettings.impact }`);
-
-        return await step.prompt(CHOICE_PROMPT, {
-            prompt: 'Selecciona el la urgencia: ',
-            choices: ChoiceFactory.toChoices(['Low', 'Medium', 'High'])
-        });
-    }
-
-    async priorityStep(step) {
-        await step.context.sendActivity(`Nivel de urgencia escogida: ${ step.result.value }`);
-        step.values.urgency = step.result.value;
-        return await step.prompt(CHOICE_PROMPT, {
-            prompt: 'Selecciona la prioridad: ',
-            choices: ChoiceFactory.toChoices(['Low', 'Medium', 'High'])
-        });
+        
+        if(step.values.ppmSettings.urgency)
+        {
+            return await step.next();
+        }
+        const options = this.optionBuilder(URGENCY_CHOICE);
+        return await step.prompt(CHOICE_PROMPT, options);
     }
 
     async descriptionStep(step) {
-        await step.context.sendActivity(`Nivel de prioridad escogida: ${ step.result.value }`);
-        step.values.priority = step.result.value;
+        if(typeof step.result != 'undefined'){
+            step.values.ppmSettings.urgency = step.result.value;
+        }
+        await step.context.sendActivity(`Nivel de urgencia escogida: ${ step.values.ppmSettings.urgency }`);
 
         return await step.prompt(TEXT_PROMPT, `Ingrese descripcion del ticket. Ej: GTD-XXX - QS-SN-XXX - [Descripción representativa de la solicitud] `);
     }
 
     async confirmStep(step) {
-        step.values.description = step.result;
-
-        // Get the current profile object from user state.
+        step.values.ppmSettings.description = step.result;
        
-
         const ppmSettings = step.values.ppmSettings;
 
         
@@ -154,15 +162,14 @@ class CreateTicketDialog extends CancelAndHelpDialog {
         Org Unit: ${ ppmSettings.orgUnit }\n
         WBS: ${ ppmSettings.wbs }\n
         Assigned To: ${ ppmSettings.assignedTo }\n
+        Requirement Type: ${ ppmSettings.requirementType }\n
         Reason: ${ ppmSettings.reason } \n
         Impact: ${ ppmSettings.impact } \n
         Urgency: ${ ppmSettings.urgency } \n
-        Priority: ${ ppmSettings.priority } \n
         Description: ${ ppmSettings.description } \n
         Location: ${ ppmSettings.location } \n`;
-        await step.context.sendActivity(msg);
 
-        step.values.ppm = ppmSettings;
+        await step.context.sendActivity(msg);
 
         return await step.prompt(CONFIRM_PROMPT, { prompt: 'Es esto correcto?' });
     }
@@ -170,18 +177,60 @@ class CreateTicketDialog extends CancelAndHelpDialog {
     async resultStep(step) {
 
         if (step.result) {
-            const data = await getData(step.values.ppm);
+            const data = await getData(step.values.ppmSettings);
             await step.context.sendActivity(`La id del ticket creado es: ${ data.id_ppm }`);
         }
         else
         {
             await step.context.sendActivity(`La creación del ticket a sido cancelada.`);
-
         }
 
         return await step.endDialog();
     }
+
+    optionBuilder(options) {
+        switch(options){
+            case REQUIREMENT_TYPE_CHOICE:
+                return {
+                    prompt: 'Selecciona tipo de ticket: ',
+                    retryPrompt: 'Selecciona tipo de ticket valido: ',
+                    choices: ppmOptions.requirementType
+                };
+            case SERVICE_REASON_CHOICE:
+                return {
+                    prompt: 'Selecciona la razon: ',
+                    retryPrompt: 'Selecciona una razon valida: ',
+                    choices: ppmOptions.serviceReason
+                };
+            case MAINTENANCE_REASON_CHOICE:
+                return {
+                    prompt: 'Selecciona la razon: ',
+                    retryPrompt: 'Selecciona una razon valida: ',
+                    choices: ppmOptions.serviceReason
+                };
+            case IMPACT_CHOICE:
+                return {
+                    prompt: 'Selecciona el impacto: ',
+                    retryPrompt: 'Selecciona un impacto valida: ',
+                    choices: ppmOptions.impact
+                };
+            case URGENCY_CHOICE:
+                return {
+                    prompt: 'Selecciona la urgencia: ',
+                    retryPrompt: 'Selecciona una urgencia valida: ',
+                    choices: ppmOptions.urgency
+                };
+            case CATEGORY_APPLICATION_CHOICE:
+                return {
+                    prompt: 'Selecciona una categoria de la aplicacion: ',
+                    retryPrompt: 'Selecciona una categoria valida: ',
+                    choices: ppmOptions.categoryApplication
+                };
+        }
+    }
 }
+
+
 
 const getData = async (ppmSettings) =>  {
     try {

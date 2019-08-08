@@ -71,7 +71,7 @@ class TicketHelperBot extends ActivityHandler {
         });
     }
 
-    static async conversationManager(conversationData, userProfile, turnContext, d) {
+    static async conversationManager(conversationData, userProfile, turnContext) {
 
         switch (conversationData.conversationPhase) {
             case phase.standBy:

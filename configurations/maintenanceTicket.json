@@ -1,6 +1,8 @@
 {
     "orgUnit":"1-0000013297-1",
     "wbs": "1-0000013297-1",
-    "requirementType": "Service",
+    "requirementType": "Maintenance",
+    "impact": "Low",
+    "urgency": "Low",
     "location": "Chile"
 }

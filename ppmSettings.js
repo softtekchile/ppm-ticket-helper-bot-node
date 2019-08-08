@@ -1,18 +1,19 @@
 class PpmSettings{
-    constructor(orgUnit, wbs, requirementType, location, impact, urgency, description, 
-        assignedTo, reason, clientId, categoryApplication, detailedDescription)
+    constructor(orgUnit, wbs, assignedTo, requirementType, reason, impact, urgency, description, 
+        categoryApplication, clientId, requestorName, location, detailedDescription)
     {
         this.orgUnit = orgUnit;
         this.wbs = wbs;
+        this.assignedTo = assignedTo;
         this.requirementType = requirementType;
-        this.location = location;
+        this.reason = reason;
         this.impact = impact;
         this.urgency = urgency;
         this.description = description;
-        this.assignedTo = assignedTo;
-        this.reason = reason;
-        this.clientId = clientId;
         this.categoryApplication = categoryApplication;
+        this.clientId = clientId;
+        this.requestorName = requestorName;
+        this.location = location;
         this.detailedDescription = detailedDescription;
     }
 }
