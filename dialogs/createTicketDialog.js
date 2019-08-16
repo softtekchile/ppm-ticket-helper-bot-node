@@ -109,7 +109,12 @@ class CreateTicketDialog extends CancelAndHelpDialog {
         step.values.ppmSettings.assignedTo = step.result;
         await step.context.sendActivity(`El ticket será asignado a: ${ step.values.ppmSettings.assignedTo }`);
 
-        const options = this.optionBuilder(SERVICE_REASON_CHOICE);
+        var options;
+        if(step.values.ppmSettings.requirementType === 'Service')
+            options = this.optionBuilder(SERVICE_REASON_CHOICE);
+        if(step.values.ppmSettings.requirementType === 'Maintenance')
+            options = this.optionBuilder(MAINTENANCE_REASON_CHOICE);
+    
         return await step.prompt(CHOICE_PROMPT, options);
     }
 
@@ -171,7 +176,9 @@ class CreateTicketDialog extends CancelAndHelpDialog {
 
         await step.context.sendActivity(msg);
 
-        return await step.prompt(CONFIRM_PROMPT, { prompt: 'Es esto correcto?' });
+
+        const options = this.optionBuilder(CONFIRM_PROMPT);
+        return await step.prompt(CONFIRM_PROMPT, options);
     }
 
     async resultStep(step) {
@@ -206,7 +213,7 @@ class CreateTicketDialog extends CancelAndHelpDialog {
                 return {
                     prompt: 'Selecciona la razon: ',
                     retryPrompt: 'Selecciona una razon valida: ',
-                    choices: ppmOptions.serviceReason
+                    choices: ppmOptions.maintenanceReason
                 };
             case IMPACT_CHOICE:
                 return {
@@ -225,6 +232,11 @@ class CreateTicketDialog extends CancelAndHelpDialog {
                     prompt: 'Selecciona una categoria de la aplicacion: ',
                     retryPrompt: 'Selecciona una categoria valida: ',
                     choices: ppmOptions.categoryApplication
+                };
+            case CONFIRM_PROMPT:
+                return {
+                    prompt: 'Es esto correcto?',
+                    retryPrompt: 'Entregue una respuesta valida'
                 };
         }
     }
