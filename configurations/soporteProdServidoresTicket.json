@@ -1,7 +1,7 @@
 {
     "orgUnit":"1-0000013297-1",
     "wbs": "1-0000013297-1",
-    "requirementType": "Maintenance",
+    "requirementType": "Service",
     "reason": "New Asset Request",
     "impact": "Low",
     "urgency": "Low",
