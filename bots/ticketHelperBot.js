@@ -10,7 +10,7 @@ const PpmUserCard = require('../adaptiveCards/ppmUserCard.json');
 
 const phase = {
     standBy: 'standBy',
-    mail: 'mail',
+    who: 'who',
     createTicket: 'createTicket'
     };
 
@@ -33,7 +33,7 @@ class TicketHelperBot extends ActivityHandler {
         this.onMessage(async (turnContext, next) => {
             // Get the state properties from the turn context.
             const userProfile = await this.userProfile.get(turnContext, {});
-            const conversationData = await this.conversationData.get( turnContext, { conversationPhase: phase.mail  });
+            const conversationData = await this.conversationData.get( turnContext, { conversationPhase: phase.who  });
 
             await TicketHelperBot.conversationManager(conversationData, userProfile, turnContext);
             if (conversationData.conversationPhase == phase.createTicket){
@@ -58,9 +58,10 @@ class TicketHelperBot extends ActivityHandler {
         });
 
         this.onDialog(async (turnContext, next) => {
-            const conversationData = await this.conversationData.get( turnContext, { conversationPhase: phase.mail  });
+            const conversationData = await this.conversationData.get( turnContext, { conversationPhase: phase.who  });
             switch(turnContext.activity.text){
-                case 'cancel': 
+                case 'cancel':
+                case 'quit':  
                     conversationData.conversationPhase = phase.standBy;
             };
             // Save any state changes. The load happened during the execution of the Dialog.
@@ -78,22 +79,28 @@ class TicketHelperBot extends ActivityHandler {
     }
 
     static async conversationManager(conversationData, userProfile, turnContext) {
-
-        switch (conversationData.conversationPhase) {
+        const text = turnContext.activity.text.toLowerCase();
+        switch (conversationData.conversationPhase) 
+        {
             case phase.standBy:
-                if (turnContext.activity.text == "!mail")
+                if (text == "!who")
                 {
                     await turnContext.sendActivity(`Correo: ${ userProfile.mail }`);
                     await turnContext.sendActivity(`pw: ${ userProfile.pw }`);
-
                 }
-                if (turnContext.activity.text == "!create")
+                if (text == "!create")
                 {
                     conversationData.conversationPhase = phase.createTicket;
                 }
+                if (text == "help")
+                {
+                    await turnContext.sendActivity(`Lista de comandos disponibles`);
+                    await turnContext.sendActivity(`!create - inicia la creación de ticket\n`+
+                    '!who - muestra las credenciales ingresdas');
+                }
                 break;
             
-            case phase.mail:
+            case phase.who:
                 userProfile.name = turnContext.activity.from.name;
                 await turnContext.sendActivity(`Gracias ${ userProfile.name }.`);
                 userProfile.mail = turnContext.activity.value.mail;

@@ -26,10 +26,13 @@ class CancelAndHelpDialog extends ComponentDialog {
             const text = innerDc.context.activity.text.toLowerCase();
     
             switch (text) {
+            case 'wat':
             case 'help':
             case '?':
-                const helpMessageText = 'Show help here';
+                const helpMessageText = 'Comandos disponibles durante el dialogo de creación';
                 await innerDc.context.sendActivity(helpMessageText, helpMessageText);
+                const helpDescriptionText = 'cancel/quit - aborta la creación del ticket';
+                await innerDc.context.sendActivity(helpDescriptionText, helpDescriptionText);
                 return;
 
             case 'cancel':
