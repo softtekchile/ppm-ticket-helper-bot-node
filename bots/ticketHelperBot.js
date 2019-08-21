@@ -79,10 +79,10 @@ class TicketHelperBot extends ActivityHandler {
     }
 
     static async conversationManager(conversationData, userProfile, turnContext) {
-        const text = turnContext.activity.text.toLowerCase();
         switch (conversationData.conversationPhase) 
         {
             case phase.standBy:
+                const text = turnContext.activity.text.toLowerCase();
                 if (text == "!who")
                 {
                     await turnContext.sendActivity(`Correo: ${ userProfile.mail }`);
@@ -92,11 +92,11 @@ class TicketHelperBot extends ActivityHandler {
                 {
                     conversationData.conversationPhase = phase.createTicket;
                 }
-                if (text == "help")
+                if (text == "help" ||text == "?")
                 {
                     await turnContext.sendActivity(`Lista de comandos disponibles`);
                     await turnContext.sendActivity(`!create - inicia la creación de ticket\n`+
-                    '!who - muestra las credenciales ingresdas');
+                    '!who - muestra las credenciales ingresadas');
                 }
                 break;
             

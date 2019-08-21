@@ -26,8 +26,18 @@ const { PpmSettings } = require('../ppmSettings');
 let serviceTicket = require('../configurations/serviceTicket.json');
 let genericTicket = require('../configurations/genericTicket.json');
 let maintenanceTicket = require('../configurations/maintenanceTicket.json');
-let ppmOptions = require('../configurations/ppmOptions.json');
+let soporteProdServidoresTicket = require('../configurations/soporteProdServidoresTicket.json');
 
+let ppmOptions = require('../configurations/ppmOptions.json');
+const ticketType = {
+    soporteProdServidoresTicket: 'Soporte Producción - Servidores',
+    soporteProdFuncionalTicket: 'Soporte Producción - Funcionales',
+    gestionPasoProdTicket: 'Preparar/Gestionar Paso a Producción',
+    pasoHomoTicket: 'Paso a Homologación',
+    despliegueTicket:'Despliegue',
+    solicitudesVariasTicket: "Solicitudes Varias",
+    qsCambioCodigo:'Cambio de Código'
+    };
 
 const CHOICE_PROMPT = 'CHOICE_PROMPT';
 const CONFIRM_PROMPT = 'CONFIRM_PROMPT';
@@ -37,7 +47,7 @@ const PPM_SETTINGS = 'PPM_SETTINGS';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
 
 //tipos de selecciones multiples
-const REQUIREMENT_TYPE_CHOICE = 'requirementType';
+const TICKET_TYPE_CHOICE = 'ticketType';
 const SERVICE_REASON_CHOICE = 'serviceReason';
 const MAINTENANCE_REASON_CHOICE = 'maintenanceReason';
 const IMPACT_CHOICE = 'impact';
@@ -83,23 +93,26 @@ class CreateTicketDialog extends CancelAndHelpDialog {
     }
 
     async setupStep(step) {
+        const map = step.context.turnState.entries();
+        const m = map.next();
 
-        const options = this.optionBuilder(REQUIREMENT_TYPE_CHOICE);
+        const array = Array.from(step.context.turnState.entries());
+        const s = array[0];
+        const d = s[1].state.userProfile.mail;
+
+        const options = this.optionBuilder(TICKET_TYPE_CHOICE);
         return await step.prompt(CHOICE_PROMPT, options);
     }
 
     async assignStep(step) {
         var ppmSettingsPre;
         switch (step.result.value){
-            case 'Service':
-                ppmSettingsPre = serviceTicket;
+            case ticketType.soporteProdServidoresTicket:
+                ppmSettingsPre = soporteProdServidoresTicket;
                 break;
-            case 'Maintenance':
-                ppmSettingsPre = maintenanceTicket;
-                break;
-            case 'Generic':
-                ppmSettingsPre = genericTicket;
-                break; 
+            default:
+                await step.context.sendActivity(`Opción actualmente no implementada.`);
+                return await step.endDialog();                
         };
         step.values.ppmSettings = ppmSettingsPre;
         return await step.prompt(TEXT_PROMPT, `Escriba el nombre de la persona a la que será asignado este Ticket`);
@@ -197,11 +210,11 @@ class CreateTicketDialog extends CancelAndHelpDialog {
 
     optionBuilder(options) {
         switch(options){
-            case REQUIREMENT_TYPE_CHOICE:
+            case TICKET_TYPE_CHOICE:
                 return {
                     prompt: 'Selecciona tipo de ticket: ',
                     retryPrompt: 'Selecciona tipo de ticket valido: ',
-                    choices: ppmOptions.requirementType
+                    choices: ppmOptions.ticketType
                 };
             case SERVICE_REASON_CHOICE:
                 return {

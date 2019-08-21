@@ -1,6 +1,7 @@
 {
-    "requirementType": [
-        "Service","Maintenance","Generic"
+    "ticketType": [
+        "Soporte Producción - Servidores","Soporte Producción - Funcionales","Preparar/Gestionar Paso a Producción",
+        "Paso a Homologación", "Despliegue", "Solicitudes Varias", "QS - Cambio de Código"
     ],
     "serviceReason":[
         "New Account Access","Account Activation","Account Modification","Password Reset",
