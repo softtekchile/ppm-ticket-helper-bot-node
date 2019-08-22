@@ -5,5 +5,6 @@
     "reason": "New Asset Request",
     "impact": "Low",
     "urgency": "Low",
+    "clientId": "GTD-453",
     "location": "Chile"
 }

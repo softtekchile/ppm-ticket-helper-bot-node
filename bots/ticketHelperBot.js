@@ -10,7 +10,8 @@ const PpmUserCard = require('../adaptiveCards/ppmUserCard.json');
 
 const phase = {
     standBy: 'standBy',
-    who: 'who',
+    welcome: 'welcome',
+    auth: 'auth',
     createTicket: 'createTicket'
     };
 
@@ -33,7 +34,8 @@ class TicketHelperBot extends ActivityHandler {
         this.onMessage(async (turnContext, next) => {
             // Get the state properties from the turn context.
             const userProfile = await this.userProfile.get(turnContext, {});
-            const conversationData = await this.conversationData.get( turnContext, { conversationPhase: phase.who  });
+            const conversationData = await this.conversationData.get( turnContext, { conversationPhase: phase.welcome  });
+
 
             await TicketHelperBot.conversationManager(conversationData, userProfile, turnContext);
             if (conversationData.conversationPhase == phase.createTicket){
@@ -47,9 +49,10 @@ class TicketHelperBot extends ActivityHandler {
             const membersAdded = context.activity.membersAdded;
             for (let cnt = 0; cnt < membersAdded.length; ++cnt) {
                 if (membersAdded[cnt].id !== context.activity.recipient.id) {
-                    await context.sendActivity('Bienvenido a Bot Crear Ticket Service '+ context.activity.from.name);
+                    await context.sendActivity('Bienvenido al servicio de creación de Tickets PPM '+ context.activity.from.name + 
+                    ', para comenzar escriba cualquier mensaje.');
 
-                    await context.sendActivity({ attachments: [this.createAdaptiveCard()] });
+                    //await context.sendActivity({ attachments: [this.createAdaptiveCard()] });
 
                 }
             }
@@ -58,7 +61,7 @@ class TicketHelperBot extends ActivityHandler {
         });
 
         this.onDialog(async (turnContext, next) => {
-            const conversationData = await this.conversationData.get( turnContext, { conversationPhase: phase.who  });
+            const conversationData = await this.conversationData.get( turnContext, { conversationPhase: phase.welcome  });
             switch(turnContext.activity.text){
                 case 'cancel':
                 case 'quit':  
@@ -92,24 +95,59 @@ class TicketHelperBot extends ActivityHandler {
                 {
                     conversationData.conversationPhase = phase.createTicket;
                 }
-                if (text == "help" ||text == "?")
+                if (text == "help" || text == "?" || text == "wat")
                 {
-                    await turnContext.sendActivity(`Lista de comandos disponibles`);
-                    await turnContext.sendActivity(`!create - inicia la creación de ticket\n`+
-                    '!who - muestra las credenciales ingresadas');
+                    let msg = `Lista de comandos disponibles \r
+                    !create - inicia la creación de ticket \r
+                    !who - muestra las credenciales ingresadas \r
+                    !changecredentials - permite cambiar credenciales`;
+                    await turnContext.sendActivity(msg);
+                }
+                if (text == "!changecredentials")
+                {                    
+                    await turnContext.sendActivity(`${ userProfile.name }, por favor ingrese su mail.`);
+                    conversationData.conversationPhase = phase.auth;
+                    userProfile.mail = undefined;
+                    userProfile.pw = undefined;
                 }
                 break;
             
-            case phase.who:
-                userProfile.name = turnContext.activity.from.name;
-                await turnContext.sendActivity(`Gracias ${ userProfile.name }.`);
-                userProfile.mail = turnContext.activity.value.mail;
-                userProfile.pw = turnContext.activity.value.pw;
-
-                conversationData.conversationPhase = phase.standBy;
+            case phase.welcome:
+                if(typeof userProfile.name == 'undefined'){
+                    userProfile.name = turnContext.activity.from.name;
+                }
+                await turnContext.sendActivity(`${ userProfile.name }, por favor ingrese su mail.`);
+                conversationData.conversationPhase = phase.auth;
                 break;
+                
+            case phase.auth:
+                
+                if(typeof userProfile.mail == 'undefined'){
+
+                    const val = await this.validateEmail(turnContext.activity.text);
+                    if(val){
+                        userProfile.mail = turnContext.activity.text;
+                        await turnContext.sendActivity(`Su mail es  ${ userProfile.mail }.`);
+                        await turnContext.sendActivity(`Ingrese su contraseña.`);
+                    }else{
+                        await turnContext.sendActivity(`Ingrese un mail con formato correcto.`);
+                    }
+                }else if(typeof userProfile.pw == 'undefined'){
+                    userProfile.pw = turnContext.activity.text;
+                    await turnContext.sendActivity(`Gracias por ingresar su contraseña. para ver la lista de comandos disponbiles escriba "help"`);
+                    conversationData.conversationPhase = phase.standBy;
+                }
+                break;
+      
+
+                
         }
 
+    }
+
+    static async validateEmail(email) {
+        var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+        return re.test(String(email).toLowerCase());
     }
 }
 

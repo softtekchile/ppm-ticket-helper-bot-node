@@ -42,6 +42,7 @@ const ticketType = {
 const CHOICE_PROMPT = 'CHOICE_PROMPT';
 const CONFIRM_PROMPT = 'CONFIRM_PROMPT';
 const TEXT_PROMPT = 'TEXT_PROMPT';
+const NUMBER_PROMPT = 'NUMBER_PROMPT';
 
 const PPM_SETTINGS = 'PPM_SETTINGS';
 const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
@@ -53,6 +54,7 @@ const MAINTENANCE_REASON_CHOICE = 'maintenanceReason';
 const IMPACT_CHOICE = 'impact';
 const URGENCY_CHOICE = 'urgency';
 const CATEGORY_APPLICATION_CHOICE = 'CategoryApplication';
+const EVENTUM_CHOICE = 'eventum';
 
 class CreateTicketDialog extends CancelAndHelpDialog {
     constructor(userState) {
@@ -63,17 +65,20 @@ class CreateTicketDialog extends CancelAndHelpDialog {
         this.addDialog(new TextPrompt(TEXT_PROMPT));
         this.addDialog(new ChoicePrompt(CHOICE_PROMPT));
         this.addDialog(new ConfirmPrompt(CONFIRM_PROMPT));
+        this.addDialog(new NumberPrompt(NUMBER_PROMPT, this.positiveNumValidator));
         this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
             this.setupStep.bind(this),
             this.assignStep.bind(this),
             this.reasonStep.bind(this),
             this.impactStep.bind(this),
             this.urgencyStep.bind(this),
-            this.descriptionStep.bind(this),
-            //this.categoryApplicationStep.bind(this),
             //this.clientIdStep.bind(this),
-            //this.requestorNameStep.bind(this),
-            //this.detailedDescriptionStep.bind(this),
+            this.eventumStep.bind(this),
+            this.numStep.bind(this),
+            this.descriptionStep.bind(this),
+            this.requestorNameStep.bind(this),
+            this.categoryApplicationStep.bind(this),
+            this.detailedDescriptionStep.bind(this),
             this.confirmStep.bind(this),
             this.resultStep.bind(this)
             
@@ -93,13 +98,6 @@ class CreateTicketDialog extends CancelAndHelpDialog {
     }
 
     async setupStep(step) {
-        const map = step.context.turnState.entries();
-        const m = map.next();
-
-        const array = Array.from(step.context.turnState.entries());
-        const s = array[0];
-        const d = s[1].state.userProfile.mail;
-
         const options = this.optionBuilder(TICKET_TYPE_CHOICE);
         return await step.prompt(CHOICE_PROMPT, options);
     }
@@ -115,12 +113,28 @@ class CreateTicketDialog extends CancelAndHelpDialog {
                 return await step.endDialog();                
         };
         step.values.ppmSettings = ppmSettingsPre;
+        step.values.ppmSettings.auth = await this.getAuth(step);
+        step.values.ppmSettings.assignedTo = await this.getAddress(step.values.ppmSettings.auth.mail);
+
+        if(step.values.ppmSettings.assignedTo)
+        {
+            return await step.next();
+        }
+
         return await step.prompt(TEXT_PROMPT, `Escriba el nombre de la persona a la que será asignado este Ticket`);
     }
 
     async reasonStep(step) {
-        step.values.ppmSettings.assignedTo = step.result;
+        if(typeof step.result != 'undefined')
+        {
+            step.values.ppmSettings.assignedTo = step.result;
+        }
         await step.context.sendActivity(`El ticket será asignado a: ${ step.values.ppmSettings.assignedTo }`);
+
+        if(step.values.ppmSettings.requirementType)
+        {
+            return await step.next();
+        }
 
         var options;
         if(step.values.ppmSettings.requirementType === 'Service')
@@ -133,8 +147,12 @@ class CreateTicketDialog extends CancelAndHelpDialog {
 
     async impactStep(step) {
 
-        await step.context.sendActivity(`Razón escogida ${ step.result.value }`);
-        step.values.ppmSettings.reason = step.result.value;
+        if(typeof step.result != 'undefined')
+        {
+            step.values.ppmSettings.reason = step.result.value;
+        }
+
+        await step.context.sendActivity(`Razón escogida ${ step.values.ppmSettings.reason }`);
 
         if(step.values.ppmSettings.impact)
         {
@@ -160,19 +178,47 @@ class CreateTicketDialog extends CancelAndHelpDialog {
         const options = this.optionBuilder(URGENCY_CHOICE);
         return await step.prompt(CHOICE_PROMPT, options);
     }
-
-    async descriptionStep(step) {
+    async eventumStep(step) {
         if(typeof step.result != 'undefined'){
             step.values.ppmSettings.urgency = step.result.value;
         }
         await step.context.sendActivity(`Nivel de urgencia escogida: ${ step.values.ppmSettings.urgency }`);
 
-        return await step.prompt(TEXT_PROMPT, `Ingrese descripcion del ticket. Ej: GTD-XXX - QS-SN-XXX - [Descripción representativa de la solicitud] `);
+        const options = this.optionBuilder(EVENTUM_CHOICE);
+        return await step.prompt(CHOICE_PROMPT, options);
     }
 
+    async numStep(step) {
+        step.values.descriptionBuilder = `${step.values.ppmSettings.clientId} - QS-${step.result.value}-` ;
+        const options = { prompt: `Ingrese el numero de ${ step.result.value } `, retryPrompt: 'El valor debe ser mayor a 0.' };
+        return await step.prompt(NUMBER_PROMPT, options);
+    }
+    async descriptionStep(step) {
+        step.values.descriptionBuilder = step.values.descriptionBuilder + step.result;
+        return await step.prompt(TEXT_PROMPT, `Ingrese descripcion representativa de la solicitud`);
+    }
+    async requestorNameStep(step) {
+        step.values.ppmSettings.description = `${step.values.descriptionBuilder} - ${ step.result } `;
+        await step.context.sendActivity(`La descripcion de la solicitud es la siguiente: ${ step.values.ppmSettings.description }`);
+
+        return await step.prompt(TEXT_PROMPT, `Ingrese el nombre de quien lo solicita`);
+    }
+    async categoryApplicationStep(step) {
+        step.values.ppmSettings.requestorName = step.result;
+
+        await step.context.sendActivity(`La persona que lo solicita es: ${ step.values.ppmSettings.requestorName }`);
+
+        const options = this.optionBuilder(CATEGORY_APPLICATION_CHOICE);
+        return await step.prompt(CHOICE_PROMPT, options);
+    }
+    async detailedDescriptionStep(step) {
+        step.values.ppmSettings.categoryApplication = step.result.value;
+        return await step.prompt(TEXT_PROMPT, `Ingrese descripcion detallada de la solicitud`);
+    }
+    
     async confirmStep(step) {
-        step.values.ppmSettings.description = step.result;
-       
+        step.values.ppmSettings.detailedDescription = step.result;
+
         const ppmSettings = step.values.ppmSettings;
 
         
@@ -185,7 +231,10 @@ class CreateTicketDialog extends CancelAndHelpDialog {
         Impact: ${ ppmSettings.impact } \n
         Urgency: ${ ppmSettings.urgency } \n
         Description: ${ ppmSettings.description } \n
-        Location: ${ ppmSettings.location } \n`;
+        Requestor Name: ${ ppmSettings.requestorName } \n
+        Category/ApplicationStep: ${ ppmSettings.categoryApplication } \n
+        Location: ${ ppmSettings.location } \n
+        Detailed Description: ${ ppmSettings.detailedDescription } \n`;
 
         await step.context.sendActivity(msg);
 
@@ -246,12 +295,35 @@ class CreateTicketDialog extends CancelAndHelpDialog {
                     retryPrompt: 'Selecciona una categoria valida: ',
                     choices: ppmOptions.categoryApplication
                 };
+            case EVENTUM_CHOICE:
+                    return {
+                        prompt: 'Es esta solicitud un Eventum?',
+                        retryPrompt: 'Selecciona una opcion valida: ',
+                        choices: ppmOptions.eventum
+                    };
             case CONFIRM_PROMPT:
                 return {
                     prompt: 'Es esto correcto?',
                     retryPrompt: 'Entregue una respuesta valida'
                 };
         }
+    }
+    async getAuth(step){
+        const map = step.context.turnState.entries();
+        const m = map.next();
+
+        const array = Array.from(step.context.turnState.entries());
+        const s = array[0];
+        var userProfile = s[1].state.userProfile;
+        return userProfile;
+    }
+    async getAddress(email){
+        var address = await email.substring(0, email.indexOf("@"));
+        return address;
+    }
+    async positiveNumValidator(promptContext) {
+        // This condition is our validation rule. You can also change the value at this point.
+        return promptContext.recognized.succeeded && promptContext.recognized.value > 0;
     }
 }
 
