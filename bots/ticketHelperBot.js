@@ -7,6 +7,7 @@ const { ActivityHandler, CardFactory } = require('botbuilder');
 const CONVERSATION_DATA_PROPERTY = 'conversationData';
 const USER_PROFILE_PROPERTY = 'userProfile';
 const PpmUserCard = require('../adaptiveCards/ppmUserCard.json');
+const encrypt = require('../util/encrypt');
 
 const phase = {
     standBy: 'standBy',
@@ -86,30 +87,37 @@ class TicketHelperBot extends ActivityHandler {
         {
             case phase.standBy:
                 const text = turnContext.activity.text.toLowerCase();
-                if (text == "!who")
-                {
-                    await turnContext.sendActivity(`Correo: ${ userProfile.mail }`);
-                    await turnContext.sendActivity(`pw: ${ userProfile.pw }`);
+                switch (text) 
+                {            
+                    case "!who":
+                        await turnContext.sendActivity(`Correo: ${ userProfile.mail }`);
+                        await turnContext.sendActivity(`pw: ${ userProfile.pw }`);
+                        break;
+                    case "!create":
+                        conversationData.conversationPhase = phase.createTicket;
+                        break;
+                    case "help":
+                    case "?":
+                    case "wat":
+                        let msg = `Lista de comandos disponibles \r
+                        !create - inicia la creación de ticket \r
+                        !who - muestra las credenciales ingresadas \r
+                        !changecredentials - permite cambiar credenciales`;
+                        await turnContext.sendActivity(msg);
+                        break;
+                    case "!changecredentials":
+                        await turnContext.sendActivity(`${ userProfile.name }, por favor ingrese su mail.`);
+                        conversationData.conversationPhase = phase.auth;
+                        userProfile.mail = undefined;
+                        userProfile.pw = undefined;
+                        break;
+                    default:
+                        await turnContext.sendActivity(`${ userProfile.name }, En que le puedo ayudar. para ver la lista de comandos disponible escriba help`);
+                        break;
+                            
+
                 }
-                if (text == "!create")
-                {
-                    conversationData.conversationPhase = phase.createTicket;
-                }
-                if (text == "help" || text == "?" || text == "wat")
-                {
-                    let msg = `Lista de comandos disponibles \r
-                    !create - inicia la creación de ticket \r
-                    !who - muestra las credenciales ingresadas \r
-                    !changecredentials - permite cambiar credenciales`;
-                    await turnContext.sendActivity(msg);
-                }
-                if (text == "!changecredentials")
-                {                    
-                    await turnContext.sendActivity(`${ userProfile.name }, por favor ingrese su mail.`);
-                    conversationData.conversationPhase = phase.auth;
-                    userProfile.mail = undefined;
-                    userProfile.pw = undefined;
-                }
+          
                 break;
             
             case phase.welcome:
@@ -134,6 +142,7 @@ class TicketHelperBot extends ActivityHandler {
                     }
                 }else if(typeof userProfile.pw == 'undefined'){
                     userProfile.pw = turnContext.activity.text;
+                    userProfile.encryptedPw = encrypt.encryptTest(userProfile.pw);
                     await turnContext.sendActivity(`Gracias por ingresar su contraseña. para ver la lista de comandos disponbiles escriba "help"`);
                     conversationData.conversationPhase = phase.standBy;
                 }
@@ -146,7 +155,7 @@ class TicketHelperBot extends ActivityHandler {
     }
 
     static async validateEmail(email) {
-        var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+        var re = /^[\w.+\-]+@softtek\.com$/;
         return re.test(String(email).toLowerCase());
     }
 }
