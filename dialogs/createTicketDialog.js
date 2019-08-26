@@ -129,7 +129,7 @@ class CreateTicketDialog extends CancelAndHelpDialog {
         {
             step.values.ppmSettings.assignedTo = step.result;
         }
-        await step.context.sendActivity(`El ticket será asignado a: ${ step.values.ppmSettings.assignedTo }`);
+        //await step.context.sendActivity(`El ticket será asignado a: ${ step.values.ppmSettings.assignedTo }`);
 
         if(step.values.ppmSettings.requirementType)
         {
@@ -152,7 +152,7 @@ class CreateTicketDialog extends CancelAndHelpDialog {
             step.values.ppmSettings.reason = step.result.value;
         }
 
-        await step.context.sendActivity(`Razón escogida ${ step.values.ppmSettings.reason }`);
+        //await step.context.sendActivity(`Razón escogida ${ step.values.ppmSettings.reason }`);
 
         if(step.values.ppmSettings.impact)
         {
@@ -169,7 +169,7 @@ class CreateTicketDialog extends CancelAndHelpDialog {
             step.values.ppmSettings.impact = step.result.value;
         }
 
-        await step.context.sendActivity(`Nivel de impacto escogido: ${ step.values.ppmSettings.impact }`);
+        //await step.context.sendActivity(`Nivel de impacto escogido: ${ step.values.ppmSettings.impact }`);
         
         if(step.values.ppmSettings.urgency)
         {
@@ -182,7 +182,7 @@ class CreateTicketDialog extends CancelAndHelpDialog {
         if(typeof step.result != 'undefined'){
             step.values.ppmSettings.urgency = step.result.value;
         }
-        await step.context.sendActivity(`Nivel de urgencia escogida: ${ step.values.ppmSettings.urgency }`);
+        //await step.context.sendActivity(`Nivel de urgencia escogida: ${ step.values.ppmSettings.urgency }`);
 
         const options = this.optionBuilder(EVENTUM_CHOICE);
         return await step.prompt(CHOICE_PROMPT, options);
@@ -206,7 +206,7 @@ class CreateTicketDialog extends CancelAndHelpDialog {
     async categoryApplicationStep(step) {
         step.values.ppmSettings.requestorName = step.result;
 
-        await step.context.sendActivity(`La persona que lo solicita es: ${ step.values.ppmSettings.requestorName }`);
+        //await step.context.sendActivity(`La persona que lo solicita es: ${ step.values.ppmSettings.requestorName }`);
 
         const options = this.optionBuilder(CATEGORY_APPLICATION_CHOICE);
         return await step.prompt(CHOICE_PROMPT, options);

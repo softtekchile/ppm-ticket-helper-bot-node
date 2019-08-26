@@ -113,11 +113,8 @@ class TicketHelperBot extends ActivityHandler {
                         break;
                     default:
                         await turnContext.sendActivity(`${ userProfile.name }, En que le puedo ayudar. para ver la lista de comandos disponible escriba help`);
-                        break;
-                            
-
+                        break;  
                 }
-          
                 break;
             
             case phase.welcome:
