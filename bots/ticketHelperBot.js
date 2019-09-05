@@ -13,8 +13,9 @@ const phase = {
     standBy: 'standBy',
     welcome: 'welcome',
     auth: 'auth',
-    createTicket: 'createTicket'
-    };
+    createTicket: 'createTicket',
+    encrypt: 'encrypt'
+};
 
 class TicketHelperBot extends ActivityHandler {
     constructor(conversationState, userState, dialog) {
@@ -88,28 +89,40 @@ class TicketHelperBot extends ActivityHandler {
             case phase.standBy:
                 const text = turnContext.activity.text.toLowerCase();
                 switch (text) 
-                {            
+                {
+                    case "!encrypt":
+                    case "encriptar":
+                        await turnContext.sendActivity(`Envie el texto que desea encriptar`);
+                        conversationData.conversationPhase = phase.encrypt;
+                        break;
                     case "!who":
+                    case "credenciales":
+                    case "autenticacion":
                         await turnContext.sendActivity(`Correo: ${ userProfile.mail }`);
-                        await turnContext.sendActivity(`pw: ${ userProfile.pw }`);
+                        await turnContext.sendActivity(`pw: ${ userProfile.encryptedPw }`);
                         break;
                     case "!create":
+                    case "ticket":
+                    case "crear":
                         conversationData.conversationPhase = phase.createTicket;
                         break;
                     case "help":
                     case "?":
                     case "wat":
+                    case "ayuda":
                         let msg = `Lista de comandos disponibles \r
                         !create - inicia la creación de ticket \r
                         !who - muestra las credenciales ingresadas \r
-                        !changecredentials - permite cambiar credenciales`;
+                        !changecredentials - permite cambiar credenciales \r
+                        !encrypt - encripta el texto que se envia`;
                         await turnContext.sendActivity(msg);
                         break;
                     case "!changecredentials":
+                    case "cambiar credenciales":
                         await turnContext.sendActivity(`${ userProfile.name }, por favor ingrese su mail.`);
                         conversationData.conversationPhase = phase.auth;
                         userProfile.mail = undefined;
-                        userProfile.pw = undefined;
+                        userProfile.encryptedPw = undefined;
                         break;
                     default:
                         await turnContext.sendActivity(`${ userProfile.name }, En que le puedo ayudar. para ver la lista de comandos disponible escriba help`);
@@ -133,20 +146,22 @@ class TicketHelperBot extends ActivityHandler {
                     if(val){
                         userProfile.mail = turnContext.activity.text;
                         await turnContext.sendActivity(`Su mail es  ${ userProfile.mail }.`);
-                        await turnContext.sendActivity(`Ingrese su contraseña.`);
+                        await turnContext.sendActivity(`Ingrese su contraseña encriptada.`);
                     }else{
                         await turnContext.sendActivity(`Ingrese un mail con formato correcto.`);
                     }
-                }else if(typeof userProfile.pw == 'undefined'){
-                    userProfile.pw = turnContext.activity.text;
-                    userProfile.encryptedPw = encrypt.encryptTest(userProfile.pw);
-                    await turnContext.sendActivity(`Gracias por ingresar su contraseña. para ver la lista de comandos disponbiles escriba "help"`);
+                }else if(typeof userProfile.encryptedPw == 'undefined'){
+                    userProfile.encryptedPw = turnContext.activity.text;
+                    await turnContext.sendActivity(`Gracias por ingresar su contraseña encryptada. para ver la lista de comandos disponbiles escriba "help"`);
                     conversationData.conversationPhase = phase.standBy;
                 }
                 break;
-      
+            case phase.encrypt:
+                var encryptedText = encrypt.encryptTest(turnContext.activity.text);
+                await turnContext.sendActivity(`Aqui esta su texto encriptado: ${ encryptedText }`);
+                conversationData.conversationPhase = phase.standBy;
+                break;
 
-                
         }
 
     }

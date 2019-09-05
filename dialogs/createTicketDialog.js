@@ -19,8 +19,10 @@ const { CancelAndHelpDialog } = require('./cancelAndHelpDialog');
 
 //http request con axios
 const axios = require("axios");
-const url = "http://httpbin.org/post";
+const url = "http://localhost:8888/ppm-ticket-helper-service-0.0.1-SNAPSHOT/ticketService/getTicketData";
 const { PpmSettings } = require('../ppmSettings');
+
+const automation = require('../automations/autotest');
 
 //preconfiguraciones 
 let serviceTicket = require('../configurations/serviceTicket.json');
@@ -113,8 +115,8 @@ class CreateTicketDialog extends CancelAndHelpDialog {
                 return await step.endDialog();                
         };
         step.values.ppmSettings = ppmSettingsPre;
-        step.values.ppmSettings.auth = await this.getAuth(step);
-        step.values.ppmSettings.assignedTo = await this.getAddress(step.values.ppmSettings.auth.mail);
+        step.values.auth = await this.getAuth(step);
+        step.values.ppmSettings.assignedTo = await this.getAddress(step.values.auth.mail);
 
         if(step.values.ppmSettings.assignedTo)
         {
@@ -246,8 +248,8 @@ class CreateTicketDialog extends CancelAndHelpDialog {
     async resultStep(step) {
 
         if (step.result) {
-            const data = await getData(step.values.ppmSettings);
-            await step.context.sendActivity(`La id del ticket creado es: ${ data.id_ppm }`);
+            const nroSolicitud = await getData(step.values);
+            await step.context.sendActivity(`La id del ticket creado es: ${ nroSolicitud }`);
         }
         else
         {
@@ -329,12 +331,19 @@ class CreateTicketDialog extends CancelAndHelpDialog {
 
 
 
-const getData = async (ppmSettings) =>  {
+const getData = async (values) =>  {
     try {
-      const response = await axios.post(url, { ppm : ppmSettings, id_ppm : '1234567'});
+      const response = await axios.post(url, { 
+          ppm : values.ppmSettings, 
+          auth : {
+              mail: values.auth.mail,
+              encryptedPw: values.auth.encryptedPw
+          }
+        });
+      //const ticket = await automation.automationTest(ppmSettings);
       const data = response.data;
       console.log(data);
-      const content = JSON.parse(data.data);
+      const content = JSON.parse(data.nroSolicitud);
       return content;
     } catch (error) {
       console.log(error);

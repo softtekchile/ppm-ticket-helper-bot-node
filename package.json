@@ -23,6 +23,7 @@
         "fs": "0.0.1-security",
         "https": "^1.0.0",
         "node-forge": "^0.8.5",
+        "puppeteer": "^1.19.0",
         "restify": "8.2.0"
     },
     "devDependencies": {
