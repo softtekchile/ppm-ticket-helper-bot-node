@@ -247,7 +247,10 @@ class CreateTicketDialog extends CancelAndHelpDialog {
 
     async resultStep(step) {
 
-        if (step.result) {
+        if (step.result) 
+        {
+            step.context.sendActivity(`Su ticket se esta creando ... `);
+
             const nroSolicitud = await getData(step.values);
             await step.context.sendActivity(`La id del ticket creado es: ${ nroSolicitud }`);
         }
@@ -334,8 +337,8 @@ class CreateTicketDialog extends CancelAndHelpDialog {
 const getData = async (values) =>  {
     try {
       const response = await axios.post(url, { 
-          ppm : values.ppmSettings, 
-          auth : {
+            "ticketPPM" : values.ppmSettings, 
+            "auth": {
               mail: values.auth.mail,
               encryptedPw: values.auth.encryptedPw
           }

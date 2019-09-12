@@ -1,5 +1,4 @@
 'use strict'
-var pw = "Softtek.2019";
 var puppeteer = require('puppeteer');
 
 var automationTest =  async function(ticketData){
@@ -10,7 +9,7 @@ var automationTest =  async function(ticketData){
     await page.goto('https://ppm.softtek.com/itg/web/knta/global/Logon.jsp');
     await page.waitForSelector('input[name="USERNAME"]');
     await page.type('input[name="USERNAME"]', ticketData.assignedTo);
-    await page.type('input[name="PASSWORD"]', pw);
+    await page.type('input[name="PASSWORD"]', "pw");
     await page.click('div[id="label-LOGON_SUBMIT_BUTTON_CAPTION"]');
     await page.waitForNavigation();
     await page.goto('https://ppm.softtek.com/itg/web/knta/crt/RequestCreate.jsp?REQUEST_TYPE_CREATE=5.35.30691.Application+Maintenance+and+Support');
