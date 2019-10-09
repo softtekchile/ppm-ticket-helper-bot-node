@@ -1,0 +1,67 @@
+{
+    "welcome": {
+		"tittle": "👋 Hola, bienvenido a Bot Framework!",
+		"subtittle": "Si quieres comenzar otra vez, solo escribe \"**%s**\" en cualquier momento. ¿Estas bloqueado y no sabes que hacer? Type \"**ayuda**\" y te daré algunas pistas.",
+		"privacy": "See my privacy policy",
+		"readyPrompt": "¿Como puedo ayudarte?"
+	},
+	"greeting": {
+		"namePrompt": "What is your name?",
+		"cityPrompt": "Hello %s, what city do you live in?",
+		"validateName": "Names need to be at least %s characters long.",
+		"validateCity": "City names needs to be at least %s characters long.",
+		"greetUser1": "Hi {userName}, from {userCity}, nice to meet you!",
+		"greetUser2": "You can always say \"My name is <your name>\" or \"I live in <your city>\" to reintroduce yourself to me."
+	},
+	"hints": {
+		"default": "Hola",
+		"createTicket": "Nuevo Ticket",
+		"help": "Ayuda",
+		"restart": "Reiniciar"
+	},
+	"help": {
+		"introduction": "Permiteme ayudarte:",
+		"restart": "- Escribe \"**%s**\" si quieres comenzar otra vez.",
+		"cancel": "- Escribe \"**%s**\" si cambias de opinion en algún momento.",
+		"createTicket":"- Escribe \"**%s**\" si quieres crear un nuevo ticket PPM."
+	},
+	"createTicket":{
+
+	},
+	"cancel": {
+		"prompt": "¿Seguro que quieres cancelar? 😮",
+		"confirmed": "Ok, comencemos otra vez. 👍 Como te gustaria continuar?",
+		"denied": "Ok, continuemos. 👍",
+		"nothing": "No tengo nada que cancelar 😅"
+	},
+	"promptAnswer": {
+		"yes": "Si",
+		"no": "No",
+		"yesThumb": "Si 👍",
+		"noThumb": "No 👎"
+	},
+	"synonyms": {
+		"yes": ["si", "yes", "y", "yeah", "yay", "👍", "estupendo", "great", "genial", "suena bien", "works for me", "bingo", "adelante",
+			"yup", "si a eso", "eso es correto", "correcto", "exactamente", "exacto", "ok",
+			"yep", "eso es cierto", "cierto", "seeguro", "bien", "confirmado", "pulgar arriba"],
+		"no": ["no", "n", "nope", "👎", "ko", "uh-uh", "nix", "nixie", "nixy", "nixey", "nay", "nah",
+			"negativo", "out of the question", "for foul nor fair", "not", "pulgar abajo", "cuando los cerdos vuelen", 
+			"go fish", "ciertamente", "de ninguna forma", "por supuesto que no", "dificilmente"],
+		"cancel": ["cancelar", "abortar"],
+		"createTicket": ["nuevo ticket", "crear ticket","crear","ticket"],
+		"help": ["ayuda", "wat","halp","ayudaaaaaaaaaaa","?","socorro", "necesito ayuda"],
+		"restart":["reiniciar", "restablecer", "recomenzar"]
+	},
+	"readyPrompt": "¿Qué puedo hacer por ti? \r (Escoge una o escribe algo)",
+	"profanity": "That hurt my feelings. 😓 If you are stuck, just type \"**help**\" and I'll tell you some hints.",
+	"dialogs": {
+		"defaultHelpDialog" : "DefaultHelpDialog",
+		"defaultCancelDialog" : "DefaultCancelDialog",
+		"createTicketDialog": "CreateTicketDialog"
+	},
+	"commands":{
+		"restart": "reiniciar",
+		"cancel": "cancelar",
+		"createTicket":"nuevo ticket"
+	}
+}	

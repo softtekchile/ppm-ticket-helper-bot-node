@@ -1,5 +1,4 @@
 'use strict';
-
 const {
     ChoiceFactory,
     ChoicePrompt,
@@ -12,25 +11,20 @@ const {
     WaterfallDialog
 } = require('botbuilder-dialogs');
 
-
-
-const { CancelAndHelpDialog } = require('./cancelAndHelpDialog');
-
-
 //http request con axios
 const axios = require("axios");
 const url = "http://localhost:8888/ppm-ticket-helper-service-0.0.1-SNAPSHOT/ticketService/getTicketData";
-const { PpmSettings } = require('../ppmSettings');
 
-const automation = require('../automations/autotest');
-
+//UTILS
+const { Utils } = require('../shared/utils');
+const localizer = require('i18n');
 //preconfiguraciones 
-let serviceTicket = require('../configurations/serviceTicket.json');
-let genericTicket = require('../configurations/genericTicket.json');
-let maintenanceTicket = require('../configurations/maintenanceTicket.json');
-let soporteProdServidoresTicket = require('../configurations/soporteProdServidoresTicket.json');
+let serviceTicket = require('./resources/configurations/serviceTicket.json');
+let genericTicket = require('./resources/configurations/genericTicket.json');
+let maintenanceTicket = require('./resources/configurations/maintenanceTicket.json');
+let soporteProdServidoresTicket = require('./resources/configurations/soporteProdServidoresTicket.json');
 
-let ppmOptions = require('../configurations/ppmOptions.json');
+let ppmOptions = require('./resources/configurations/ppmOptions.json');
 const ticketType = {
     soporteProdServidoresTicket: 'Soporte Producción - Servidores',
     soporteProdFuncionalTicket: 'Soporte Producción - Funcionales',
@@ -45,9 +39,9 @@ const CHOICE_PROMPT = 'CHOICE_PROMPT';
 const CONFIRM_PROMPT = 'CONFIRM_PROMPT';
 const TEXT_PROMPT = 'TEXT_PROMPT';
 const NUMBER_PROMPT = 'NUMBER_PROMPT';
-
 const PPM_SETTINGS = 'PPM_SETTINGS';
-const WATERFALL_DIALOG = 'WATERFALL_DIALOG';
+
+const TICKET_DIALOG = 'TICKET_DIALOG';
 
 //tipos de selecciones multiples
 const TICKET_TYPE_CHOICE = 'ticketType';
@@ -55,20 +49,19 @@ const SERVICE_REASON_CHOICE = 'serviceReason';
 const MAINTENANCE_REASON_CHOICE = 'maintenanceReason';
 const IMPACT_CHOICE = 'impact';
 const URGENCY_CHOICE = 'urgency';
-const CATEGORY_APPLICATION_CHOICE = 'CategoryApplication';
+const CATEGORY_APPLICATION_CHOICE = 'categoryApplication';
 const EVENTUM_CHOICE = 'eventum';
 
-class CreateTicketDialog extends CancelAndHelpDialog {
-    constructor(userState) {
-        super('createTicketDialog');
-
-        this.ppmSettings = userState.createProperty(PPM_SETTINGS);
-        this.userState = userState;
+class CreateTicketDialog extends ComponentDialog {
+    constructor(userDataAccessor) {
+        super(CreateTicketDialog.name);
+        if (!userDataAccessor) throw new Error('CreateTicket constructor missing parameter: userDataAccessor is required.');
+        
         this.addDialog(new TextPrompt(TEXT_PROMPT));
         this.addDialog(new ChoicePrompt(CHOICE_PROMPT));
         this.addDialog(new ConfirmPrompt(CONFIRM_PROMPT));
         this.addDialog(new NumberPrompt(NUMBER_PROMPT, this.positiveNumValidator));
-        this.addDialog(new WaterfallDialog(WATERFALL_DIALOG, [
+        this.addDialog(new WaterfallDialog(TICKET_DIALOG, [
             this.setupStep.bind(this),
             this.assignStep.bind(this),
             this.reasonStep.bind(this),
@@ -83,27 +76,16 @@ class CreateTicketDialog extends CancelAndHelpDialog {
             this.detailedDescriptionStep.bind(this),
             this.confirmStep.bind(this),
             this.resultStep.bind(this)
-            
         ]));
-        this.initialDialogId = WATERFALL_DIALOG;
-    }
-
-    async run(turnContext, accessor) {
-        const dialogSet = new DialogSet(accessor);
-        dialogSet.add(this);
-        
-        const dialogContext = await dialogSet.createContext(turnContext);
-        const results = await dialogContext.continueDialog();
-        if (results.status === DialogTurnStatus.empty) {
-            await dialogContext.beginDialog(this.id);
-        }
+    
+        this.userDataAccessor = userDataAccessor;
+        this.initialDialogId = TICKET_DIALOG;
     }
 
     async setupStep(step) {
         const options = this.optionBuilder(TICKET_TYPE_CHOICE);
         return await step.prompt(CHOICE_PROMPT, options);
     }
-
     async assignStep(step) {
         var ppmSettingsPre;
         switch (step.result.value){
@@ -115,14 +97,6 @@ class CreateTicketDialog extends CancelAndHelpDialog {
                 return await step.endDialog();                
         };
         step.values.ppmSettings = ppmSettingsPre;
-        step.values.auth = await this.getAuth(step);
-        step.values.ppmSettings.assignedTo = await this.getAddress(step.values.auth.mail);
-
-        if(step.values.ppmSettings.assignedTo)
-        {
-            return await step.next();
-        }
-
         return await step.prompt(TEXT_PROMPT, `Escriba el nombre de la persona a la que será asignado este Ticket`);
     }
 
@@ -146,7 +120,6 @@ class CreateTicketDialog extends CancelAndHelpDialog {
     
         return await step.prompt(CHOICE_PROMPT, options);
     }
-
     async impactStep(step) {
 
         if(typeof step.result != 'undefined')
@@ -180,6 +153,7 @@ class CreateTicketDialog extends CancelAndHelpDialog {
         const options = this.optionBuilder(URGENCY_CHOICE);
         return await step.prompt(CHOICE_PROMPT, options);
     }
+
     async eventumStep(step) {
         if(typeof step.result != 'undefined'){
             step.values.ppmSettings.urgency = step.result.value;
@@ -189,9 +163,8 @@ class CreateTicketDialog extends CancelAndHelpDialog {
         const options = this.optionBuilder(EVENTUM_CHOICE);
         return await step.prompt(CHOICE_PROMPT, options);
     }
-
     async numStep(step) {
-        step.values.descriptionBuilder = `${step.values.ppmSettings.clientId} - QS-${step.result.value}-` ;
+        step.values.descriptionBuilder = `${step.values.ppmSettings.clientId} - ${step.result.value}-` ;
         const options = { prompt: `Ingrese el numero de ${ step.result.value } `, retryPrompt: 'El valor debe ser mayor a 0.' };
         return await step.prompt(NUMBER_PROMPT, options);
     }
@@ -244,7 +217,6 @@ class CreateTicketDialog extends CancelAndHelpDialog {
         const options = this.optionBuilder(CONFIRM_PROMPT);
         return await step.prompt(CONFIRM_PROMPT, options);
     }
-
     async resultStep(step) {
 
         if (step.result) 
@@ -259,10 +231,23 @@ class CreateTicketDialog extends CancelAndHelpDialog {
             await step.context.sendActivity(`La creación del ticket a sido cancelada.`);
         }
 
+        const userData = await this.userDataAccessor.get(step.context);
+        const locale = userData.locale;
+        await step.context.sendActivity(localizer.gettext(locale, 'readyPrompt'));
+        await Utils.showMainMenu(step.context, locale);
         return await step.endDialog();
     }
 
+    async positiveNumValidator(promptContext) {
+        return promptContext.recognized.succeeded && promptContext.recognized.value > 0;
+    }
     optionBuilder(options) {
+        
+        //TODO migrar a locale
+        //const userData = this.userDataAccessor.get(step.context);
+        //const locale = userData.locale;
+        //const format = localizer.gettext(locale, 'readyPrompt');
+
         switch(options){
             case TICKET_TYPE_CHOICE:
                 return {
@@ -313,34 +298,15 @@ class CreateTicketDialog extends CancelAndHelpDialog {
                 };
         }
     }
-    async getAuth(step){
-        const map = step.context.turnState.entries();
-        const m = map.next();
-
-        const array = Array.from(step.context.turnState.entries());
-        const s = array[0];
-        var userProfile = s[1].state.userProfile;
-        return userProfile;
-    }
-    async getAddress(email){
-        var address = await email.substring(0, email.indexOf("@"));
-        return address;
-    }
-    async positiveNumValidator(promptContext) {
-        // This condition is our validation rule. You can also change the value at this point.
-        return promptContext.recognized.succeeded && promptContext.recognized.value > 0;
-    }
 }
-
-
 
 const getData = async (values) =>  {
     try {
       const response = await axios.post(url, { 
             "ticketPPM" : values.ppmSettings, 
             "auth": {
-              mail: values.auth.mail,
-              encryptedPw: values.auth.encryptedPw
+              mail: "bastian.alegria@softtek.com",
+              encryptedPw: "DG7z9MVyWq5sxJcrdbtN6g=="
           }
         });
       //const ticket = await automation.automationTest(ppmSettings);
@@ -352,6 +318,6 @@ const getData = async (values) =>  {
       console.log(error);
     }
   };
+exports.CreateTicketDialog = CreateTicketDialog;
 
-module.exports.CreateTicketDialog = CreateTicketDialog;
 

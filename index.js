@@ -1,65 +1,64 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
-
 const path = require('path')
 const restify = require('restify');
+const localizer = require('i18n');
+//https://www.npmjs.com/package/i18n mas informacion de locales
 
-// Import required bot services.
-// See https://aka.ms/bot-services to learn more about the different parts of a bot.
 const { BotFrameworkAdapter, MemoryStorage, ConversationState, UserState } = require('botbuilder');
 
-// This bot's main dialog.
-const { TicketHelperBot } = require('./bots/ticketHelperBot');
-const { CreateTicketDialog } = require('./dialogs/createTicketDialog');
+const { TicketHelperBot } = require('./bots/bot');
 
-// Read environment variables from .env file
-const ENV_FILE = path.join(__dirname, '.env');
+const ENV_FILE = path.join(__dirname, 'config/.env');
 require('dotenv').config({ path: ENV_FILE });
 
-// Create HTTP server
-const server = restify.createServer();
-server.listen(process.env.port || process.env.PORT || 3978, () => {
-    console.log(`\n${ server.name } listening to ${ server.url }`);
-});
-
-// Create adapter.
-// See https://aka.ms/about-bot-adapter to learn more about .bot file its use and bot configuration.
 const adapter = new BotFrameworkAdapter({
     appId: process.env.microsoftAppID,
     appPassword: process.env.microsoftAppPassword
 });
 
-// Define state store for your bot.
-// See https://aka.ms/about-bot-state to learn more about bot state.
 const memoryStorage = new MemoryStorage();
-
-// Create conversation and user state with in-memory storage provider.
 const conversationState = new ConversationState(memoryStorage);
 const userState = new UserState(memoryStorage);
 
-// Create the main dialog.
-const dialog = new CreateTicketDialog(userState);
-const bot = new TicketHelperBot(conversationState, userState, dialog);
+localizer.configure({
+    //defaultLocale: 'en-US',
+    defaultLocale: 'es-CL',
+    directory: path.join(__dirname, './locales'),
+    objectNotation: true // Supports hierarchical translation. For instance, allows to use 'welcome.readyPrompt'
+});
 
-// Catch-all for errors.
+// Mimic the old v3 session.localizer.gettext()
+// https://docs.microsoft.com/en-us/azure/bot-service/nodejs/bot-builder-nodejs-localization?view=azure-bot-service-3.0#localize-prompts
+localizer.gettext = function(locale, key, args) {
+    return this.__({ phrase: key, locale: locale }, args);
+};
+
 adapter.onTurnError = async (context, error) => {
-    // This check writes out errors to console log .vs. app insights.
     console.error(`\n [onTurnError]: ${ error }`);
-    // Send a message to the user
     await context.sendActivity(`Oops. Something went wrong!`);
-
-    // Clear out state
     await conversationState.load(context);
     await conversationState.clear(context);
-    // Save state changes.
     await conversationState.saveChanges(context);
 };
 
+let bot;
+try {
+    bot = new TicketHelperBot(conversationState, userState);
+} catch (err) {
+    console.error(`[botInitializationError]: ${ err }`);
+    process.exit();
+}
 
-// Listen for incoming requests.
+let server = restify.createServer();
+server.listen(process.env.port || process.env.PORT || 3978, () => {
+    console.log(`\n${ server.name } listening to ${ server.url }`);
+    console.log(`\nGet Bot Framework Emulator: https://aka.ms/botframework-emulator`);
+    console.log(`\nTo talk to your bot, open config/development.bot file in the Emulator`);
+});
+
 server.post('/api/messages', (req, res) => {
-    adapter.processActivity(req, res, async (context) => {
-        // Route to main dialog.
-        await bot.run(context);
+    // Route received a request to adapter for processing
+    adapter.processActivity(req, res, async (turnContext) => {
+        // route to bot activity handler.
+        await bot.onTurn(turnContext);
     });
 });

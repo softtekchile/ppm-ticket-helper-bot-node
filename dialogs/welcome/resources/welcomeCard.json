@@ -1,0 +1,38 @@
+{
+    "type": "AdaptiveCard",
+    "version": "1.0",
+    "body": [
+        {
+            "type": "Container",
+            "items": [
+                {
+                    "type": "TextBlock",
+                    "text": "Bienvenido al bot tanto"
+                }
+            ]
+        },
+        {
+            "type": "Container",
+            "items": [
+                {
+                    "type": "TextBlock",
+                    "text": "Las funciones del bot son las siguientes"
+                },
+                {
+                    "type": "FactSet",
+                    "facts": [
+                        {
+                            "title": "1.",
+                            "value": "Crear PPM tickets"
+                        },
+                        {
+                            "title": "2.",
+                            "value": "Avanzar tickets"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json"
+}
